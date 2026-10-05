@@ -1,0 +1,5 @@
+﻿config.yaml
+data/private/
+*.joblib
+*.sqlite
+.venv/

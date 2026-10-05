@@ -1,0 +1,92 @@
+# features.yaml — construct audit, pilot
+# Pre-registered predictions: commit this file to git BEFORE generating any variants.
+
+meta:
+  version: "pilot-v1"
+  codebook_version: "v1"
+  date_written: "2026-10-03"        # change to the day you actually write it
+  author: "Jemin"
+
+features:
+
+  - name: question_form
+    type: relevant                   # relevant = the codebook says it decides the label
+    codebook_rule: >
+      Question form. "Where is X" / "why is X" presuppose a deficiency and count as DD.
+      "Is there an X" / "any X?" / "what are the plans" do not.
+    edit_instruction: >
+      Rewrite the question so it asks whether X exists ("is there", "any") instead of
+      presupposing X is missing ("where is", "why is"). If the post already uses the
+      neutral form, do the reverse.
+    seed_requirements: >
+      The question is the ONLY gate trigger in the post. No other stated deficiency,
+      demand, or red flag anywhere else in the text.
+    expected:
+      DD_to: not_DD                  # a DD seed should become not-DD
+      notDD_to: DD                   # a not-DD seed should become DD
+    generated_by: llm
+
+  - name: addressee
+    type: relevant
+    codebook_rule: >
+      Addressee. Scrutiny must target the project. If the scrutiny target is another
+      forum member (e.g., a peer asked to prove their own claim), it is not DD (E2).
+    edit_instruction: >
+      Change who is being asked to provide or justify something: from the project team
+      to another forum member, or the reverse. Keep the demanded item the same.
+    seed_requirements: >
+      DD seeds: a demand aimed at the project team or developer.
+      Not-DD seeds: a proof demand aimed at another member (known classifier false positives).
+    expected:
+      DD_to: not_DD
+      notDD_to: DD
+    generated_by: llm
+
+  - name: padding
+    type: irrelevant                 # irrelevant = the codebook says it must NOT change the label
+    codebook_rule: >
+      Length is not a criterion. Neutral text with no project evaluation and no
+      checkable referent cannot change the gate decision.
+    edit_instruction: >
+      Append one sentence from padding_bank, unchanged, at the end of the post.
+    seed_requirements: "Any seed."
+    expected:
+      DD_to: DD                      # label unchanged
+      notDD_to: not_DD
+    generated_by: script             # no LLM: same sentences for every seed
+
+  - name: placebo
+    type: control                    # control = tests whether editing alone moves the score
+    codebook_rule: "No construct-relevant change."
+    edit_instruction: >
+      Replace 1-3 words with exact synonyms or reorder one clause. Do not change meaning,
+      tone, who is addressed, or question form.
+    seed_requirements: "Any seed."
+    expected:
+      DD_to: DD
+      notDD_to: not_DD
+    generated_by: llm
+
+  - name: object_swap
+    type: irrelevant                 # object is Layer 2 typology; it does not decide the gate
+    codebook_rule: >
+      The gate depends on the act and a checkable referent, not on the object of
+      scrutiny (team, disclosure, code_progress, security_gov, tokenomics).
+    edit_instruction: >
+      Keep the act (demand, challenge, red flag) and its form identical. Replace the
+      object of scrutiny with a different one (e.g., source code -> team identities),
+      changing only the words needed to name the new object.
+    seed_requirements: "DD seeds with one clearly identifiable object."
+    expected:
+      DD_to: DD
+      notDD_to: not_DD
+    generated_by: llm
+
+# Neutral padding blocks, 36-40 words each. No project evaluation, no referent,
+# no question, no demand, no crypto vocabulary, no year-specific references.
+padding_bank:
+  - "Posting this from my phone on the train home, so apologies in advance for any typos or odd formatting. The connection comes and goes between stations, so I usually read a few posts at a time and reply later."
+  - "I mostly read this board and rarely post anything myself. English is not my first language, so I usually take my time before writing, and most days I just read what other people have to say."
+  - "It is late evening here and I am finishing a cup of tea before going to bed. The weather has been cold and rainy all week, so I have been spending more time indoors browsing different sections of the forum."
+  - "I switched to a new laptop last weekend and I am still getting used to the keyboard layout. Most of my bookmarks did not transfer either, so I have been finding my way back to threads through the search page."
+  - "I usually check the forum in the morning before work and again in the evening when things are quieter. Today I had a bit more free time than usual, so I am catching up on the newest replies."
