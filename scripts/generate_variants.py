@@ -10,8 +10,8 @@ For every seed in design/seeds_pilot.csv it writes:
 Output: data/private/variants_pilot.csv (resumable: rows already present are skipped)
         data/private/generation_log.jsonl (raw API request/response per call)
 
-Run from the repo root, with ANTHROPIC_API_KEY set:
-    $env:ANTHROPIC_API_KEY = "sk-..."      # PowerShell, current session only
+Run from the repo root, with OPENAI_API_KEY set:
+    $env:OPENAI_API_KEY = "sk-..."         # PowerShell, current session only
     python scripts\\generate_variants.py
     python scripts\\generate_variants.py --dry-run     # prints prompts, no API calls
 """
@@ -30,9 +30,9 @@ import pandas as pd
 import yaml
 
 # ---- settings -------------------------------------------------------------
-MODEL = "claude-sonnet-5-5"     # generator model; the LLM *coder* must be a different family
-TEMPERATURE = 0.0               # set to None if the API rejects the parameter for this model
-MAX_TOKENS = 600
+MODEL = "gpt-6-luna"            # generator model; the LLM *coder* must be a different family
+TEMPERATURE = 0.0               # dropped automatically (and logged) if the model rejects it
+MAX_TOKENS = 4000               # generous: reasoning models spend output tokens before answering
 MAX_RETRIES = 2
 
 FEATURES_PATH = "features.yaml"
@@ -130,25 +130,31 @@ def auto_flag(row):
 
 # ---- API call ---------------------------------------------------------------
 def call_llm(client, system_prompt, user_prompt):
-    kwargs = dict(model=MODEL, max_tokens=MAX_TOKENS, system=system_prompt,
-                  messages=[{"role": "user", "content": user_prompt}])
-    if TEMPERATURE is not None:
-        kwargs["temperature"] = TEMPERATURE
+    """OpenAI Responses API. Returns (parsed, raw, model_used, attempts, temperature_used)."""
+    global TEMPERATURE
     last_err = None
     for attempt in range(MAX_RETRIES + 1):
+        kwargs = dict(model=MODEL, instructions=system_prompt, input=user_prompt,
+                      max_output_tokens=MAX_TOKENS)
+        if TEMPERATURE is not None:
+            kwargs["temperature"] = TEMPERATURE
         try:
-            resp = client.messages.create(**kwargs)
-            raw = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+            resp = client.responses.create(**kwargs)
+            raw = resp.output_text or ""
             m = re.search(r"\{.*\}", raw, re.S)
             parsed = json.loads(m.group(0)) if m else None
             if not parsed or "status" not in parsed:
-                raise ValueError("no valid JSON object in response")
-            return parsed, raw, resp.model, attempt
+                raise ValueError(f"no valid JSON object in response (status={resp.status})")
+            return parsed, raw, resp.model, attempt, TEMPERATURE
         except Exception as e:          # noqa: BLE001 — log and retry
             last_err = e
+            if TEMPERATURE is not None and "temperature" in str(e).lower():
+                print("  model rejected 'temperature'; continuing without it (logged per row)")
+                TEMPERATURE = None
+                continue
             time.sleep(2 * (attempt + 1))
     return ({"variant": "", "words_changed": [], "status": "ERROR",
-             "reason": str(last_err)[:300]}, "", MODEL, MAX_RETRIES)
+             "reason": str(last_err)[:300]}, "", MODEL, MAX_RETRIES, TEMPERATURE)
 
 
 # ---- main -------------------------------------------------------------------
@@ -201,10 +207,10 @@ def main():
 
     client = None
     if not args.dry_run:
-        if not os.environ.get("ANTHROPIC_API_KEY"):
-            sys.exit("Set ANTHROPIC_API_KEY first.")
-        import anthropic
-        client = anthropic.Anthropic()
+        if not os.environ.get("OPENAI_API_KEY"):
+            sys.exit("Set OPENAI_API_KEY first.")
+        from openai import OpenAI
+        client = OpenAI()
 
     new_rows = []
     for _, s in seeds.iterrows():
@@ -234,7 +240,7 @@ def main():
                    "edited_feature": variant_id.split("_")[0] if vtype == "padding"
                    else variant_id,
                    "expected_label": expected, "instruction": instruction or "",
-                   "model": "", "attempts": "", "status": "", "reason": "",
+                   "model": "", "attempts": "", "temperature": "", "status": "", "reason": "",
                    "words_changed_reported": "",
                    "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}
 
@@ -249,11 +255,12 @@ def main():
                 if args.dry_run:
                     print(f"\n=== {sid} / {variant_id} ===\n{user_prompt}")
                     continue
-                parsed, raw, model_used, attempts = call_llm(client, system_prompt, user_prompt)
+                parsed, raw, model_used, attempts, temp_used = call_llm(
+                    client, system_prompt, user_prompt)
                 with open(LOG_PATH, "a", encoding="utf-8") as lf:
                     lf.write(json.dumps({"seed_id": sid, "variant_id": variant_id,
                                          "timestamp": row["timestamp"], "model": model_used,
-                                         "temperature": TEMPERATURE,
+                                         "temperature": temp_used,
                                          "user_prompt": user_prompt, "raw": raw},
                                         ensure_ascii=False) + "\n")
                 row.update(variant_text=parsed.get("variant", ""),
@@ -261,7 +268,7 @@ def main():
                            reason=parsed.get("reason", ""),
                            words_changed_reported=json.dumps(
                                parsed.get("words_changed", []), ensure_ascii=False),
-                           model=model_used, attempts=attempts)
+                           model=model_used, attempts=attempts, temperature=temp_used)
                 print(f"{sid} / {variant_id}: {row['status']}")
 
             row.update(auto_checks(original, row["variant_text"]))
