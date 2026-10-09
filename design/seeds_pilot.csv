@@ -1,0 +1,11 @@
+post_id,feature,seed_label,expected_variant_label,out_of_sample,year,note
+30891460,question_form,1,0,False,2018,"Where is the audit result -> Is there an audit result; sole trigger"
+52400299,question_form,1,0,False,2019,"Where is source/wallet -> Is there; CHECK: 'I see only WEB WALLET' may still read as deficiency"
+53568487,question_form,0,1,True,2020,"Any updates -> Where are the updates"
+53798142,question_form,0,1,True,2020,"are there any materials/videos -> where are the materials/videos; flip second question only"
+14581221,question_form,0,1,True,2016,"IS there ETA for GUI stats -> Where is the ETA; CHECK: may read as feature request"
+14318229,object_swap,1,1,True,2016,"tokenomics -> team (ICO amount vs address balance mismatch)"
+16368622,object_swap,1,1,True,2016,"tokenomics -> team (pre-mine 15% to 32%)"
+52218410,object_swap,1,1,True,2019,"disclosure -> team (100x faster claim, how can you prove)"
+50859385,object_swap,1,1,True,2019,"disclosure -> team (how many cards delivered, disclose numbers)"
+53683485,object_swap,1,1,True,2020,"team -> code_progress (more information about your team)"
