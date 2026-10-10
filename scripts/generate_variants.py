@@ -93,6 +93,35 @@ def object_swap_instruction(note):
             f"to name the new object; keep any numbers or comparisons structurally parallel.")
 
 
+def object_swap_instruction_v2(note):
+    """v2 (after pilot v1: 1/5 accepted). Swapping the noun alone broke the referent,
+    because the predicate belongs to the object (a percentage belongs to tokenomics).
+    v2 swaps the object together with its own predicate, and keeps the act fixed."""
+    m = re.search(r"(\w+)\s*->\s*(\w+)", str(note))
+    if not m:
+        sys.exit(f"object_swap seed needs 'source -> target' in its note, got: {note!r}")
+    src, tgt = m.group(1), m.group(2)
+    examples = {
+        "team": "a named team member's background, the team's identities, LinkedIn profiles, "
+                "or the team's stated experience",
+        "code_progress": "the source code, the GitHub repository, the wallet release, "
+                         "or the testnet",
+    }
+    return (
+        "This post scrutinises the project. Rewrite it so that it scrutinises a different "
+        f"object: {examples.get(tgt, tgt)}, instead of the current one ({src}).\n"
+        "Keep fixed: the act (asking, demanding proof, challenging, accusing), the sentence "
+        "structure, the question form, the tone, the spelling, and every sentence that is not "
+        "about the object.\n"
+        "Change: the object AND the specific claim or detail attached to it, so the new "
+        "sentence is a concrete, checkable statement that makes sense for the new object "
+        "(e.g. 'the ICO amount does not match the address balance' -> 'the team listed on the "
+        "site does not match their LinkedIn profiles').\n"
+        "The result must read as a natural forum post. Up to 8 words may differ. Return "
+        "NOT_APPLICABLE only if the act itself would have to change."
+    )
+
+
 def build_user_prompt(post_text, instruction):
     return f"POST:\n<<<\n{post_text}\n>>>\n\nEDIT:\n{instruction}"
 
@@ -161,6 +190,8 @@ def call_llm(client, system_prompt, user_prompt):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--only", default=None,
+                    help="generate only this variant_id, e.g. object_swap_v2 (revision run)")
     args = ap.parse_args()
 
     with open(FEATURES_PATH, encoding="utf-8") as fh:
@@ -226,6 +257,8 @@ def main():
         elif feature == "object_swap":
             jobs.append((feature, "llm", object_swap_instruction(s["note"]),
                          s["expected_variant_label"]))
+            jobs.append(("object_swap_v2", "llm", object_swap_instruction_v2(s["note"]),
+                         s["expected_variant_label"]))
         else:
             sys.exit(f"No instruction builder for feature {feature!r}")
         jobs.append(("placebo", "llm", feat_by_name["placebo"]["edit_instruction"].strip(),
@@ -234,6 +267,10 @@ def main():
             jobs.append((f"padding_{k + 1}", "padding", None, seed_label))
 
         for variant_id, vtype, instruction, expected in jobs:
+            if args.only and variant_id != args.only:
+                continue
+            if not args.only and variant_id.endswith("_v2"):
+                continue          # revisions run only when asked for explicitly
             if (sid, variant_id) in done:
                 continue
             row = {**base, "variant_id": variant_id, "variant_type": vtype,
