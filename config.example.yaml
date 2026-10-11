@@ -1,0 +1,23 @@
+# Copy to config.yaml (gitignored) and fill in your local paths.
+
+# Folder that contains textnorm.py (the .py source, not the .pyc)
+paper1_root: "C:/Users/jejo9217/Documents/crypto_data_scraper"
+
+# Frozen v1 classifier (audited model)
+model_path: "C:/Users/jejo9217/Documents/crypto_data_scraper/data/models/chunk_mean/model_final.joblib"
+model_sha256: "41aa85c9243799f7e023a332316578fd5b850d12ddf54a3ca7ffb0846eef522e"
+
+# Scores that THIS model produced earlier, used to confirm the pipeline reproduces them.
+# Needs a post id column and a score column; text is taken from master_coded_v2.csv,
+# or from reference_text_col if the file has the post text.
+reference_scores_csv: "C:/Users/jejo9217/Documents/crypto_data_scraper/<FILE WITH SAVED V1 SCORES>.csv"
+reference_id_col: "post_id"
+reference_score_col: "score"
+reference_text_col: ""
+
+# Leave on auto: calibration picks the option that reproduces the reference scores.
+normalize_embeddings: auto     # true / false / auto
+aggregation_mode: auto         # embedding (mean of chunk embeddings) / probability (mean of chunk scores) / auto
+
+master_path: "data/private/master_coded_v2.csv"
+device: "cpu"
