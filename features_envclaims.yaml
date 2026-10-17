@@ -5,10 +5,12 @@
 # Commit this file BEFORE generating any variants.
 
 meta:
-  version: "envclaims-v1"
+  version: "envclaims-v2"
   codebook: "Stammbach et al. (2023), Appendix B + Tables 4-5"
   padding_mode: "clause"        # model is sentence-level: neutral text goes INSIDE the sentence
-  date_written: "2026-10-15"
+  date_written: "2026-10-17"
+  system_prompt: "prompts/generation_system_disclosure_v1.txt"
+  change_log: "v2: instructions point to researcher-chosen target words per seed; insertion example removed (it only fitted sentences like the example); disclosure-specific system prompt."
   author: "Jemin"
 
 features:
@@ -25,13 +27,13 @@ features:
       is an explicit statement of positive environmental impact.
     edit_instruction_by_label:
       "0": >
-        Add one short clause stating that the product, service or process has a positive
-        environmental effect (for example, that it reduces emissions or pollution). Do not
-        add numbers, targets, labels or certifications. Keep every other word.
+        At the place named below, add one short clause stating that this product, service or
+        process has a positive environmental effect (for example, that it reduces emissions,
+        pollution, or resource use). Do not add numbers, targets, labels or certifications.
       "1": >
-        Remove only the words that state the positive environmental effect, so the sentence
-        still describes the product, service or process but no longer says it benefits the
-        environment. Keep every other word.
+        Remove the words named below, which state the positive environmental effect. If the
+        sentence then lacks a predicate, replace them with a short neutral description that
+        says nothing about the environment (for example 'are available in several models').
     expected:
       "0": 1
       "1": 0
@@ -52,17 +54,15 @@ features:
       sustainability wording at all.
     edit_instruction_by_label:
       "1": >
-        Remove only the generic sustainability or responsibility wording, the way 'designed to
-        meet high sustainability standards' becomes 'designed to' in this example:
+        Remove only the generic sustainability or responsibility wording named below, and
+        repair the grammar if needed. The authors' own example of this edit:
         'Our places, which are designed to meet high sustainability standards, become part of
         local communities' -> 'Our places, which are designed to become part of local communities'.
-        Keep every other word.
       "0": >
-        Insert a short generic sustainability phrase describing the firm's products, places or
-        conduct, the way 'designed to become' becomes 'designed to meet high sustainability
-        standards, become' in this example: 'Our places, which are designed to become part of
-        local communities' -> 'Our places, which are designed to meet high sustainability
-        standards, become part of local communities'. Keep every other word.
+        Insert a short generic sustainability or responsibility phrase (for example
+        'sustainable', 'sustainably', 'responsible') at the place named below, describing the
+        company's own products, places or conduct. Do not mention the environment, climate,
+        emissions or any specific environmental action.
     expected:
       "1": 0
       "0": 1

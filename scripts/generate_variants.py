@@ -122,8 +122,9 @@ def object_swap_instruction_v2(note):
     )
 
 
-def build_user_prompt(post_text, instruction):
-    return f"POST:\n<<<\n{post_text}\n>>>\n\nEDIT:\n{instruction}"
+def build_user_prompt(post_text, instruction, system_path=""):
+    unit = "SENTENCE" if "disclosure" in os.path.basename(system_path) else "POST"
+    return f"{unit}:\n<<<\n{post_text}\n>>>\n\nEDIT:\n{instruction}"
 
 
 # ---- automatic checks -------------------------------------------------------
@@ -195,6 +196,7 @@ def main():
     ap.add_argument("--texts", default=MASTER_PATH,
                     help="CSV with the seed texts (post_id + text_own, or id + text)")
     ap.add_argument("--out", default=OUT_PATH)
+    ap.add_argument("--system", default=SYSTEM_PROMPT_PATH, help="system prompt file")
     ap.add_argument("--log", default=LOG_PATH)
     ap.add_argument("--only", default=None,
                     help="generate only this variant_id, e.g. object_swap_v2 (revision run)")
@@ -210,7 +212,7 @@ def main():
     if len(padding_bank) != 5:
         sys.exit(f"Expected 5 padding_bank blocks, found {len(padding_bank)}.")
 
-    with open(SYSTEM_PROMPT_PATH, encoding="utf-8") as fh:
+    with open(args.system, encoding="utf-8") as fh:
         system_prompt = fh.read().strip()
 
     seeds = read_csv(SEEDS)
@@ -278,6 +280,10 @@ def main():
             instr = by_label.get(str(seed_label)) or by_label.get(int(seed_label))
             if not instr:
                 sys.exit(f"{feature}: no edit instruction for seed label {seed_label}")
+            target = str(s.get("target", "") or "").strip()
+            if target:
+                instr = (instr.strip() + "\nThe words this edit applies to (chosen from the codebook "
+                         f"rule before generation): {target}")
             jobs.append((feature, "llm", instr.strip(), s["expected_variant_label"]))
         else:
             sys.exit(f"No instruction builder for feature {feature!r}")
@@ -314,7 +320,7 @@ def main():
                 row.update(variant_text=padded,
                            status="OK", instruction=f"append padding_bank[{variant_id[-1]}]")
             else:
-                user_prompt = build_user_prompt(original, instruction)
+                user_prompt = build_user_prompt(original, instruction, args.system)
                 if args.dry_run:
                     print(f"\n=== {sid} / {variant_id} ===\n{user_prompt}")
                     continue
