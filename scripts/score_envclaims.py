@@ -121,6 +121,13 @@ def variants(model):
                                                             & (v["auto_flag"] == ""))
     base = v[v["variant_id"] == "original"].set_index("seed_id")["score"]
     plac = v[v["variant_id"] == "placebo"].set_index("seed_id")["score"]
+    # Scores from this model sit close to 0 or 1, where probability differences hide large
+    # changes; report shifts in log-odds as well.
+    v["logit"] = np.log(np.clip(v["score"], 1e-6, 1 - 1e-6) / (1 - np.clip(v["score"], 1e-6, 1 - 1e-6)))
+    lbase = v[v["variant_id"] == "original"].set_index("seed_id")["logit"]
+    lplac = v[v["variant_id"] == "placebo"].set_index("seed_id")["logit"]
+    v["dlogit_vs_original"] = v["logit"] - v["seed_id"].map(lbase)
+    v["dlogit_vs_placebo"] = v["logit"] - v["seed_id"].map(lplac)
     v["score_original"] = v["seed_id"].map(base)
     v["score_placebo"] = v["seed_id"].map(plac)
     v["delta_vs_original"] = v["score"] - v["score_original"]
@@ -130,14 +137,15 @@ def variants(model):
     v.to_csv(f"{DATA}/scores_envclaims.csv", index=False, quoting=csv.QUOTE_ALL)
     cols = ["seed_id", "seed_label", "variant_id", "edited_feature", "expected_label",
             "label_truth", "include_primary", "score_original", "score_placebo", "score",
-            "delta_vs_original", "delta_vs_placebo", "model_revision"]
+            "delta_vs_original", "delta_vs_placebo", "dlogit_vs_original", "dlogit_vs_placebo",
+            "model_revision"]
     table = v[v["variant_id"] != "original"][cols]
     table.round(4).to_csv(f"{RESULTS}/envclaims_score_table.csv", index=False)
     prim = table[table["include_primary"]]
     print(prim.drop(columns="model_revision").round(3).to_string(index=False))
     print("\nMean shift vs original, by edit (primary rows):")
-    print(prim.groupby("edited_feature")["delta_vs_original"].agg(["count", "mean", "min", "max"])
-          .round(3).to_string())
+    print(prim.groupby("edited_feature")[["delta_vs_original", "dlogit_vs_original"]]
+          .agg(["count", "mean", "min", "max"]).round(3).to_string())
 
 
 def doclevel(model, n_docs=200, doc_len=10, seed=1):

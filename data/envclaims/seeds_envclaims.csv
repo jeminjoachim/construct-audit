@@ -1,0 +1,11 @@
+post_id,feature,seed_label,expected_variant_label,note
+test_0248,stated_impact,0,1,"PCF/ECF bleaching process described, no impact stated"
+test_0127,stated_impact,0,1,"fully electric city bus, no impact stated"
+test_0030,stated_impact,0,1,"designs/builds solar, wind, hydro, biomass stations, no impact stated"
+test_0245,stated_impact,1,0,"only claim element: reduces water consumption ~40%; may return NOT_APPLICABLE"
+test_0017,stated_impact,1,0,"only claim element: powered by 100% renewable energy"
+test_0205,sustainability_wording,1,0,"only claim element: 'and its commitment to sustainability'"
+test_0187,sustainability_wording,1,0,"only claim element: sustainable way / sustainability focus areas"
+test_0029,sustainability_wording,0,1,"store experience, no sustainability wording"
+test_0145,sustainability_wording,0,1,"production planning per store, no sustainability wording"
+test_0218,sustainability_wording,0,1,"capex on servers, no sustainability wording"
