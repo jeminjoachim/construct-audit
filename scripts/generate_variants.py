@@ -190,12 +190,21 @@ def call_llm(client, system_prompt, user_prompt):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--features", default=FEATURES_PATH)
+    ap.add_argument("--seeds", default=SEEDS_PATH)
+    ap.add_argument("--texts", default=MASTER_PATH,
+                    help="CSV with the seed texts (post_id + text_own, or id + text)")
+    ap.add_argument("--out", default=OUT_PATH)
+    ap.add_argument("--log", default=LOG_PATH)
     ap.add_argument("--only", default=None,
                     help="generate only this variant_id, e.g. object_swap_v2 (revision run)")
     args = ap.parse_args()
+    FEATURES, SEEDS, TEXTS = args.features, args.seeds, args.texts
+    globals()["OUT_PATH"], globals()["LOG_PATH"] = args.out, args.log
 
-    with open(FEATURES_PATH, encoding="utf-8") as fh:
+    with open(FEATURES, encoding="utf-8") as fh:
         feats = yaml.safe_load(fh)
+    padding_mode = feats.get("meta", {}).get("padding_mode", "append")
     feat_by_name = {f["name"]: f for f in feats["features"]}
     padding_bank = feats.get("padding_bank") or []
     if len(padding_bank) != 5:
@@ -204,10 +213,13 @@ def main():
     with open(SYSTEM_PROMPT_PATH, encoding="utf-8") as fh:
         system_prompt = fh.read().strip()
 
-    seeds = read_csv(SEEDS_PATH)
+    seeds = read_csv(SEEDS)
     for need in ["post_id", "feature", "seed_label", "expected_variant_label", "note"]:
         if need not in seeds.columns:
             sys.exit(f"seeds file missing column: {need}")
+    dup = seeds["post_id"][seeds["post_id"].duplicated()].tolist()
+    if dup:
+        sys.exit(f"Each seed may carry one feature only; duplicated post_ids: {dup}")
     missing = set(seeds["feature"]) - set(feat_by_name)
     if missing:
         sys.exit(f"Features in seeds but not in features.yaml: {missing}")
@@ -215,18 +227,20 @@ def main():
         if f not in feat_by_name:
             sys.exit(f"features.yaml has no '{f}' entry.")
 
-    master = read_csv(MASTER_PATH)
-    master["post_id"] = master["post_id"].str.strip()
-    text_by_id = dict(zip(master["post_id"], master["text_own"]))
+    master = read_csv(TEXTS)
+    id_c = "post_id" if "post_id" in master.columns else "id"
+    tx_c = "text_own" if "text_own" in master.columns else "text"
+    master[id_c] = master[id_c].str.strip()
+    text_by_id = dict(zip(master[id_c], master[tx_c]))
     absent = [p for p in seeds["post_id"] if p not in text_by_id]
     if absent:
         sys.exit(f"Seed post_ids not found in master: {absent}")
 
     provenance = {
-        "features_sha256": sha256_file(FEATURES_PATH),
-        "seeds_sha256": sha256_file(SEEDS_PATH),
+        "features_sha256": sha256_file(FEATURES),
+        "seeds_sha256": sha256_file(SEEDS),
         "system_prompt_sha256": sha256_text(system_prompt),
-        "master_sha256": sha256_file(MASTER_PATH),
+        "master_sha256": sha256_file(TEXTS),
         "features_version": feats.get("meta", {}).get("version", ""),
     }
 
@@ -259,6 +273,12 @@ def main():
                          s["expected_variant_label"]))
             jobs.append(("object_swap_v2", "llm", object_swap_instruction_v2(s["note"]),
                          s["expected_variant_label"]))
+        elif feat_by_name[feature].get("edit_instruction_by_label"):
+            by_label = feat_by_name[feature]["edit_instruction_by_label"]
+            instr = by_label.get(str(seed_label)) or by_label.get(int(seed_label))
+            if not instr:
+                sys.exit(f"{feature}: no edit instruction for seed label {seed_label}")
+            jobs.append((feature, "llm", instr.strip(), s["expected_variant_label"]))
         else:
             sys.exit(f"No instruction builder for feature {feature!r}")
         jobs.append(("placebo", "llm", feat_by_name["placebo"]["edit_instruction"].strip(),
@@ -285,7 +305,13 @@ def main():
                 row.update(variant_text=original, status="OK")
             elif vtype == "padding":
                 block = padding_bank[int(variant_id.split("_")[1]) - 1]
-                row.update(variant_text=original.rstrip() + PADDING_SEP + block.strip(),
+                if padding_mode == "clause":
+                    body = original.rstrip()
+                    end = body[-1] if body and body[-1] in ".!?" else ""
+                    padded = body[:len(body) - len(end)] + ", " + block.strip().strip(",. ") + end
+                else:
+                    padded = original.rstrip() + PADDING_SEP + block.strip()
+                row.update(variant_text=padded,
                            status="OK", instruction=f"append padding_bank[{variant_id[-1]}]")
             else:
                 user_prompt = build_user_prompt(original, instruction)
