@@ -5,13 +5,13 @@
 # Commit this file BEFORE generating any variants.
 
 meta:
-  version: "envclaims-v2"
+  version: "envclaims-v3"
   codebook: "Stammbach et al. (2023), Appendix B + Tables 4-5"
   padding_mode: "clause"        # model is sentence-level: neutral text goes INSIDE the sentence
   date_written: "2026-10-17"
   system_prompt: "prompts/generation_system_disclosure_v1.txt"
-  change_log: "v2: instructions point to researcher-chosen target words per seed; insertion example removed (it only fitted sentences like the example); disclosure-specific system prompt."
-  author: "Jemin"
+  change_log: "v2: instructions point to researcher-chosen target words per seed; insertion example removed (it only fitted sentences like the example); disclosure-specific system prompt. v3: stated_impact_wordmatched added after scoring v2, exploratory vocabulary control."
+  author: "Jemin Joachim"
 
 features:
 
@@ -36,6 +36,29 @@ features:
         says nothing about the environment (for example 'are available in several models').
     expected:
       "0": 1
+      "1": 0
+    generated_by: llm
+  
+  - name: stated_impact_wordmatched
+    type: relevant
+    source: >
+      Table 5, AUSEA row (impact not stated -> no claim) and risk-exposure rows
+      (describing emissions or exposure without commitment -> no claim).
+      ADDED AFTER SCORING stated_impact, as a vocabulary control.
+    codebook_rule: >
+      Mentioning an environmental term without stating a positive impact, improvement,
+      target or commitment is not a claim.
+    edit_instruction_by_label:
+      "0": >
+        At the place named below, add one short neutral clause that uses the environmental
+        term named below but states no positive effect, improvement, target or commitment
+        (for example, describing what the term depends on). Keep every other word.
+      "1": >
+        Replace the words named below, which state the positive effect, with a short neutral
+        clause that keeps the environmental term named below but states no positive effect,
+        improvement, target or commitment. Keep every other word.
+    expected:
+      "0": 0
       "1": 0
     generated_by: llm
 
