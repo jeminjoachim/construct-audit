@@ -1,0 +1,4 @@
+post_id,feature,seed_label,expected_variant_label,target,note
+test_0248,stated_impact_wordmatched,0,0,"at the end of the sentence, about the bleaching process; term: 'environmental impact'","word-matched control for stated_impact: same term as the stated_impact edit, no benefit stated"
+test_0127,stated_impact_wordmatched,0,0,"after 'a fully electric drive system'; term: 'emissions'","word-matched control for stated_impact: same term as the stated_impact edit, no benefit stated"
+test_0245,stated_impact_wordmatched,1,0,"replace 'can reduce water consumption by approximately 40% compared with conven- tional products'; keep the term 'water consumption'","word-matched control for stated_impact: same term as the original claim, no benefit stated"

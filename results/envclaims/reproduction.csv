@@ -1,0 +1,4 @@
+split,n,precision,recall,f1,accuracy,fpr
+train,2117,87.5,67.3,76.1,89.4,3.2
+validation,265,89.1,74.2,81.0,91.3,3.0
+test,265,88.6,58.2,70.3,87.5,2.5
