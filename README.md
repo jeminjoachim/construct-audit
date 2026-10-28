@@ -1,4 +1,4 @@
-# Agreement Is Not Validity: counterfactual construct audits
+# Do text classifiers measure what they claim? Testing validity with AI-generated counterfactuals
 
 Prototype and data for the Stage 1 proposal, "Do text classifiers measure what they claim? Testing validity with AI-generated counterfactuals," submitted to the *Organization Science* special issue "AI-Enabled Frontiers in Organizational Science".
 
