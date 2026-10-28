@@ -8,10 +8,6 @@ The generated file variants_pilot.csv is never modified.
 Blinding: the expected label is NOT shown. Give your own codebook label for the
 variant first; the script compares it with the expectation only after you answer.
 
-Run from the repo root:
-    python scripts\\review_variants.py            # resumes where you stopped
-    python scripts\\review_variants.py --redo 30891460:question_form   # redo one row
-Type q at any prompt to save and quit.
 """
 import argparse
 import csv

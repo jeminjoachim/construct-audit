@@ -11,11 +11,6 @@ What it does
      (variant_checks.csv), plus each padding block on its own.
   4. Writes per-row scores (private) and a text-free summary table (shareable).
 
-Run from the repo root (same venv as Paper 1, scikit-learn 1.9.0):
-    python scripts\\score_variants.py
-config.yaml keys used (see config.example.yaml):
-    paper1_root, model_path, model_sha256, reference_scores_csv,
-    normalize_embeddings (true/false/auto), aggregation_mode (embedding/probability/auto)
 """
 import argparse
 import csv
