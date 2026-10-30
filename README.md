@@ -8,7 +8,7 @@ A counterfactual construct audit edits real texts in ways a codebook says should
 - **Study 2:** a published classifier of environmental claims in company reports
   (Stammbach et al., 2023).
 
-Design, results and limitations are described in the technical appendix ([link]).
+Design, results and limitations are described in the technical appendix submitted with the proposal.
 
 ## Repository layout
 
@@ -22,6 +22,20 @@ data/envclaims/               Study 2: sentences, edits, review decisions, score
 results/                      Score tables and figures reported in the appendix
 config.example.yaml           Template for local paths (copy to config.yaml)
 ```
+
+## Pre-generation commits
+
+The rules and predictions for each study were committed before any edit was generated.
+Generation times are recorded in the `timestamp` column of each variants file (UTC).
+
+| What | File (version) | Commit | Committed | First edit generated |
+|---|---|---|---|---|
+| Study 1 rules | `features.yaml` (pilot-v1) | `[hash]` | [date, time] | 2026-10-09 21:54 UTC |
+| Study 2 rules | `features_envclaims.yaml` (v2) | `[hash]` | [date, time] | 2026-10-17 16:42 UTC |
+| Study 2 follow-up | `features_envclaims.yaml` (v3) | `[hash]` | [date, time] | 2026-10-24 16:16 UTC |
+
+To check a commit, view the file as it stood then: `git show <commit>:<file>`,
+and its date: `git log -1 --format="%H %ad" --date=iso <commit>`.
 
 ## Reproducing Study 2 (environmental claims)
 
@@ -83,8 +97,3 @@ code and is responsible for all results.
 - Code: MIT (see `LICENSE`).
 - Study 2 data: CC BY-NC-SA 4.0, following the source dataset (see `data/envclaims/LICENSE_DATA.md`).
 - Study 1 post IDs, edit descriptions and scores: CC BY 4.0. Post texts are not included.
-
-## Citation
-
-Jemin Joachim (2026). "Do text classifiers measure what they claim? Testing validity with AI-generated counterfactuals
-Stage 1 proposal, Organization Science special issue. Version v1.0-stage1, https://github.com/jeminjoachim/construct-audit.
