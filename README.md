@@ -30,9 +30,9 @@ Generation times are recorded in the `timestamp` column of each variants file (U
 
 | What | File (version) | Commit | Committed | First edit generated |
 |---|---|---|---|---|
-| Study 1 rules | `features.yaml` (pilot-v1) | `[hash]` | [date, time] | 2026-10-09 21:54 UTC |
-| Study 2 rules | `features_envclaims.yaml` (v2) | `[hash]` | [date, time] | 2026-10-17 16:42 UTC |
-| Study 2 follow-up | `features_envclaims.yaml` (v3) | `[hash]` | [date, time] | 2026-10-24 16:16 UTC |
+| Study 1 rules | `features.yaml` (pilot-v1) | `9924f70` | 2026-10-05 21:45:45 +0200 | 2026-10-09 21:54 UTC |
+| Study 2 rules | `features_envclaims.yaml` (v2) | `807b6aa` | 2026-10-17 18:29:16 +0200 | 2026-10-17 16:42 UTC |
+| Study 2 follow-up | `features_envclaims.yaml` (v3) | `54f3e6c` | 2026-10-24 18:12:00 +0200 | 2026-10-24 16:16 UTC |
 
 To check a commit, view the file as it stood then: `git show <commit>:<file>`,
 and its date: `git log -1 --format="%H %ad" --date=iso <commit>`.
